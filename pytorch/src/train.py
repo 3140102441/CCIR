@@ -234,8 +234,8 @@ if __name__ == "__main__":
 
     # train config  
     config = {}
-    config["num_iterations"] = 10000
-    config["snapshot_interval"] = 3000
+    config["num_iterations"] = 500
+    config["snapshot_interval"] = 100
     config["dataset"] = args.dataset
     config["hash_bit"] = args.hash_bit
     config["output_path"] = "../snapshot/"+config["dataset"]+"_"+ \

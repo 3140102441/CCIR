@@ -188,6 +188,10 @@ if __name__ == "__main__":
         config["data"] = {"database":{"list_path":"../data/coco/database.txt", "batch_size":16}, \
                           "test":{"list_path":"../data/coco/test.txt", "batch_size":16}}
         config["R"] = 5000
+    elif config["dataset"] == "cifar10":
+        config["data"] = {"database":{"list_path":"../data/cifar10/database.txt", "batch_size":16}, \
+                          "test":{"list_path":"../data/cifar10/test.txt", "batch_size":16}}
+        config["R"] = 5000
     code_and_label = predict(config)
 
     mAP = mean_average_precision(code_and_label, config["R"])
