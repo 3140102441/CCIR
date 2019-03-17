@@ -207,14 +207,16 @@ def train(config):
                 Variable(inputs2), Variable(labels1), Variable(labels2)
            
         inputs = torch.cat((inputs1, inputs2), dim=0)
-        outputs = base_network(inputs)
-        similarity_loss = loss.pairwise_loss(torch.mm(outputs[0].narrow(0,0,inputs1.size(0)),outputs[1].narrow(0,0,inputs1.size(0))), \
-                                 torch.mm(outputs[0].narrow(0,inputs1.size(0),inputs2.size(0)),outputs[1].narrow(0,inputs1.size(0),inputs2.size(0))), \
+        res = base_network(inputs)
+        outputs = Variable(torch.ones(inputs.size(0), hash_bit), requires_grad = True)
+        for i in range(inputs.size(0)):
+            outputs[i] = torch.mm(res[0][i],res[1][i].reshape(8,hash_bit))
+        similarity_loss = loss.pairwise_loss(outputs.narrow(0,0,inputs1.size(0)), \
+                                 outputs.narrow(0,inputs1.size(0),inputs2.size(0)), \
                                  labels1, labels2, \
                                  sigmoid_param=config["loss"]["sigmoid_param"], \
                                  l_threshold=config["loss"]["l_threshold"], \
                                  class_num=config["loss"]["class_num"])
-
         similarity_loss.backward()
         print("Iter: {:05d}, loss: {:.3f}".format(i, similarity_loss.float().data[0]))
         config["out_file"].write("Iter: {:05d}, loss: {:.3f}".format(i, \

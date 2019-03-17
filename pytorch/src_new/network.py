@@ -62,7 +62,7 @@ class ResNetFc(nn.Module):
     self.feature_layers = nn.Sequential(self.conv1, self.bn1, self.relu, self.maxpool, \
                          self.layer1, self.layer2, self.layer3, self.layer4, self.avgpool)
 
-    self.hash_layer = nn.Linear(model_resnet.fc.in_features, hash_bit)
+    self.hash_layer = nn.Linear(model_resnet.fc.in_features, self.component_num*hash_bit)
     self.hash_layer.weight.data.normal_(0, 0.01)
     self.hash_layer.bias.data.fill_(0.0)
 
@@ -91,10 +91,8 @@ class ResNetFc(nn.Module):
     y = self.activation1(self.scale*y)
     z = self.weight_layer(x)
     z = self.activation2(z)
-    a = torch.kthvalue(z,5)[0]
-    z[(x < a )] = 0
-
-    return (z,y.reshape(8,self.__in_features))
+    z[(z < 0.2)] = 0
+    return (z,y)
 
   def output_num(self):
     return self.__in_features

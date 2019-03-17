@@ -52,7 +52,7 @@ def mean_average_precision(params, R):
     
     return np.mean(np.array(APx))
         
-def code_predict(loader, model, name, test_10crop=True, gpu=True):
+def code_predict(hash_bit,loader, model, name, test_10crop=True, gpu=True):
     start_test = True
     if test_10crop:
         iter_test = [iter(loader[name+str(i)]) for i in range(10)]
@@ -68,9 +68,11 @@ def code_predict(loader, model, name, test_10crop=True, gpu=True):
                     inputs[j] = Variable(inputs[j])
             outputs = []
             for j in range(10):
-                res = model(inputs)
-                restemp = torch.mm(res[0],torch.sign(res[1]))
-                outputs.append(restemp)
+                temp = model(inputs[j])
+                res = Variable(torch.ones(inputs[j].size(0), hash_bit), requires_grad = True)
+                for i in range(inputs[j].size(0)):
+                     res[i] = torch.mm(temp[0][i],torch.sign(temp[1][i].reshape(8,hash_bit)))
+                outputs.append(res)
             outputs = sum(outputs) / 10.0
             if start_test:
                 all_output = outputs.data.float()
@@ -89,8 +91,10 @@ def code_predict(loader, model, name, test_10crop=True, gpu=True):
                 inputs = Variable(inputs.cuda())
             else:
                 inputs = Variable(inputs)
-            res = model(inputs)
-            outputs = torch.mm(res[0],torch.sign(res[1]))
+            temp = model(inputs)
+            outputs = Variable(torch.ones(inputs.size(0), hash_bit), requires_grad = True)
+            for i in range(inputs.size(0)):
+                outputs[i] = torch.mm(temp[0][i],torch.sign(temp[1][i].reshape(8,hash_bit)))
             if start_test:
                 all_output = outputs.data.cpu().float()
                 all_label = labels.float()
@@ -154,7 +158,7 @@ def predict(config):
     if use_gpu:
         base_network = base_network.cuda()
 
-    database_codes, database_labels = code_predict(dset_loaders, base_network, "database", test_10crop=prep_config["test_10crop"], gpu=use_gpu)
+    database_codes, database_labels = code_predict(config["hash_bit"],dset_loaders, base_network, "database", test_10crop=prep_config["test_10crop"], gpu=use_gpu)
     test_codes, test_labels = code_predict(dset_loaders, base_network, "test", test_10crop=prep_config["test_10crop"], gpu=use_gpu)
 
     return {"database_code":database_codes.numpy(), "database_labels":database_labels.numpy(), \
@@ -175,6 +179,7 @@ if __name__ == "__main__":
     # train config  
     config = {}
     config["dataset"] = args.dataset 
+    config["hash_bit"] = args.hash_bit
     config["snapshot_path"] = "../snapshot/"+config["dataset"]+"_"+str(args.hash_bit)+"bit_"+args.prefix+"/"+args.snapshot+"_model.pth.tar"
     config["output_path"] = "../snapshot/"+config["dataset"]+"_"+str(args.hash_bit)+"bit_"+args.prefix
 
