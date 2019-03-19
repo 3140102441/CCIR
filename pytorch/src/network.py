@@ -16,7 +16,6 @@ class AlexNetFc(nn.Module):
         self.classifier.add_module("classifier"+str(i), model_alexnet.classifier[i])
     self.feature_layers = nn.Sequential(self.features, self.classifier)
 
-    self.use_hashnet = use_hashnet
     self.hash_layer = nn.Linear(model_alexnet.classifier[6].in_features, hash_bit)
     self.hash_layer.weight.data.normal_(0, 0.01)
     self.hash_layer.bias.data.fill_(0.0)
@@ -98,7 +97,6 @@ class VGGFc(nn.Module):
         self.classifier.add_module("classifier"+str(i), model_vgg.classifier[i])
     self.feature_layers = nn.Sequential(self.features, self.classifier)
 
-    self.use_hashnet = use_hashnet
     self.hash_layer = nn.Linear(model_vgg.classifier[6].in_features, hash_bit)
     self.hash_layer.weight.data.normal_(0, 0.01)
     self.hash_layer.bias.data.fill_(0.0)
