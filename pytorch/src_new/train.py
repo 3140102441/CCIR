@@ -208,7 +208,7 @@ def train(config):
            
         inputs = torch.cat((inputs1, inputs2), dim=0)
         res = base_network(inputs)
-        outputs = Variable(torch.ones(inputs.size(0), hash_bit), requires_grad = True)
+        outputs = Variable(torch.ones(inputs.size(0), hash_bit), requires_grad = True).cuda()
         for i in range(inputs.size(0)):
             outputs[i] = torch.mm(res[0][i],res[1][i].reshape(8,hash_bit))
         similarity_loss = loss.pairwise_loss(outputs.narrow(0,0,inputs1.size(0)), \
@@ -218,9 +218,10 @@ def train(config):
                                  l_threshold=config["loss"]["l_threshold"], \
                                  class_num=config["loss"]["class_num"])
         similarity_loss.backward()
-        print("Iter: {:05d}, loss: {:.3f}".format(i, similarity_loss.float().data[0]))
-        config["out_file"].write("Iter: {:05d}, loss: {:.3f}".format(i, \
-            similarity_loss.float().data[0]))
+        if i % len_train1 == 0:
+            print("Epoch: {:05d}, loss: {:.3f}".format(i//len_train1, similarity_loss.float().data[0]))
+            config["out_file"].write("Epoch: {:05d}, loss: {:.3f}".format(i//len_train1, \
+                similarity_loss.float().data[0]))
         optimizer.step()
 
 if __name__ == "__main__":
@@ -237,8 +238,8 @@ if __name__ == "__main__":
 
     # train config  
     config = {}
-    config["num_iterations"] = 500
-    config["snapshot_interval"] = 100
+    config["num_iterations"] = 10000
+    config["snapshot_interval"] = 3000
     config["dataset"] = args.dataset
     config["hash_bit"] = args.hash_bit
     config["output_path"] = "../snapshot/"+config["dataset"]+"_"+ \
@@ -262,9 +263,9 @@ if __name__ == "__main__":
     config["prep"] = {"test_10crop":True, "resize_size":256, "crop_size":224}
     config["optimizer"] = {"type":"SGD", "optim_params":{"lr":1.0, "momentum":0.9, \
                            "weight_decay":0.0005, "nesterov":True}, "lr_type":"step", \
-                           "lr_param":{"init_lr":args.lr, "gamma":0.5, "step":100} }
+                           "lr_param":{"init_lr":args.lr, "gamma":0.5, "step":2000} }
 
-    config["loss"] = {"l_weight":1.0, "q_weight":0, "l_threshold":15.0, "sigmoid_param":10./config["hash_bit"], "class_num":args.class_num}
+    config["loss"] = {"l_weight":1.0, "q_weight":0, "l_threshold":15.0, "sigmoid_param":10/8./config["hash_bit"], "class_num":args.class_num}
 
     if config["dataset"] == "imagenet":
         config["data"] = {"train_set1":{"list_path":"../data/imagenet/train.txt", "batch_size":36}, \

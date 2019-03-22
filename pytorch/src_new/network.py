@@ -11,22 +11,29 @@ class AlexNetFc(nn.Module):
     super(AlexNetFc, self).__init__()
     model_alexnet = models.alexnet(pretrained=True)
     self.features = model_alexnet.features
+    self.component_num  = 8
+    self.bandwidth = 0.2
     self.classifier = nn.Sequential()
     for i in range(6):
         self.classifier.add_module("classifier"+str(i), model_alexnet.classifier[i])
     self.feature_layers = nn.Sequential(self.features, self.classifier)
 
-    self.use_hashnet = use_hashnet
-    self.hash_layer = nn.Linear(model_alexnet.classifier[6].in_features, hash_bit)
+    self.hash_layer = nn.Linear(model_alexnet.classifier[6].in_features, self.component_num*hash_bit)
     self.hash_layer.weight.data.normal_(0, 0.01)
     self.hash_layer.bias.data.fill_(0.0)
+
+    self.weight_layer = nn.Linear(model_alexnet.classifier[6].in_features, self.component_num)
+    self.weight_layer.weight.data.normal_(0, 0.01)
+    self.weight_layer.bias.data.fill_(0.0)
+    
     self.iter_num = 0
     self.__in_features = hash_bit
     self.step_size = 200
     self.gamma = 0.005
     self.power = 0.5
     self.init_scale = 1.0
-    self.activation = nn.Tanh()
+    self.activation1 = nn.Tanh()
+    self.activation2 = nn.ReLU()
     self.scale = self.init_scale
 
   def forward(self, x):
@@ -38,8 +45,12 @@ class AlexNetFc(nn.Module):
     y = self.hash_layer(x)
     if self.iter_num % self.step_size==0:
         self.scale = self.init_scale * (math.pow((1.+self.gamma*self.iter_num), self.power))
-    y = self.activation(self.scale*y)
-    return y
+    y = self.activation1(self.scale*y)
+    z = self.weight_layer(x)
+    z = self.activation2(z)
+    z = self.log_softmax(z)
+    z[(z < self.bandwidth)] = 0
+    return (z,y)
 
   def output_num(self):
     return self.__in_features
@@ -50,6 +61,7 @@ class ResNetFc(nn.Module):
     super(ResNetFc, self).__init__()
     model_resnet = resnet_dict[name](pretrained=True)
     self.component_num = 8
+    self.bandwidth = 0.2
     self.conv1 = model_resnet.conv1
     self.bn1 = model_resnet.bn1
     self.relu = model_resnet.relu
@@ -72,7 +84,7 @@ class ResNetFc(nn.Module):
 
     self.iter_num = 0
     self.__in_features = hash_bit
-    self.step_size = 10
+    self.step_size = 200
     self.gamma = 0.005
     self.power = 0.5
     self.init_scale = 1.0
@@ -91,7 +103,8 @@ class ResNetFc(nn.Module):
     y = self.activation1(self.scale*y)
     z = self.weight_layer(x)
     z = self.activation2(z)
-    z[(z < 0.2)] = 0
+    z = self.log_softmax(z)
+    z[(z < self.bandwidth)] = 0
     return (z,y)
 
   def output_num(self):
@@ -108,7 +121,6 @@ class VGGFc(nn.Module):
         self.classifier.add_module("classifier"+str(i), model_vgg.classifier[i])
     self.feature_layers = nn.Sequential(self.features, self.classifier)
 
-    self.use_hashnet = use_hashnet
     self.hash_layer = nn.Linear(model_vgg.classifier[6].in_features, hash_bit)
     self.hash_layer.weight.data.normal_(0, 0.01)
     self.hash_layer.bias.data.fill_(0.0)

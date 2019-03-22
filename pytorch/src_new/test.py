@@ -69,7 +69,7 @@ def code_predict(hash_bit,loader, model, name, test_10crop=True, gpu=True):
             outputs = []
             for j in range(10):
                 temp = model(inputs[j])
-                res = Variable(torch.ones(inputs[j].size(0), hash_bit), requires_grad = True)
+                res = Variable(torch.ones(inputs[j].size(0), hash_bit)).cuda()
                 for i in range(inputs[j].size(0)):
                      res[i] = torch.mm(temp[0][i],torch.sign(temp[1][i].reshape(8,hash_bit)))
                 outputs.append(res)
@@ -92,7 +92,7 @@ def code_predict(hash_bit,loader, model, name, test_10crop=True, gpu=True):
             else:
                 inputs = Variable(inputs)
             temp = model(inputs)
-            outputs = Variable(torch.ones(inputs.size(0), hash_bit), requires_grad = True)
+            outputs = Variable(torch.ones(inputs.size(0), hash_bit)).cuda()
             for i in range(inputs.size(0)):
                 outputs[i] = torch.mm(temp[0][i],torch.sign(temp[1][i].reshape(8,hash_bit)))
             if start_test:
@@ -199,7 +199,7 @@ if __name__ == "__main__":
     elif config["dataset"] == "cifar10":
         config["data"] = {"database":{"list_path":"../data/cifar10/database.txt", "batch_size":16}, \
                           "test":{"list_path":"../data/cifar10/test.txt", "batch_size":16}}
-        config["R"] = 1000
+        config["R"] = 54000
     code_and_label = predict(config)
 
     mAP = mean_average_precision(code_and_label, config["R"])

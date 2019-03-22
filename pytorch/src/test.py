@@ -51,6 +51,59 @@ def mean_average_precision(params, R):
             APx.append(np.sum(Px * imatch) / relevant_num)
     
     return np.mean(np.array(APx))
+
+def get_precision_recall_by_Hamming_Radius(params,radius=2):
+        query_output = params['test_code']
+        database_output = params['database_code']
+
+        bit_n = query_output.shape[1]
+
+        ips = np.dot(query_output, database_output.T)
+        ips = (bit_n - ips) / 2
+        ids = np.argsort(ips, 1)
+
+        precX = []
+        recX = []
+        mAPX = []
+        query_labels = params['test_labels']
+        database_labels = params['database_labels']
+
+        for i in range(ips.shape[0]):
+            label = query_labels[i, :]
+            label[label == 0] = -1
+            idx = np.reshape(np.argwhere(ips[i, :] <= radius), (-1))
+            all_num = len(idx)
+
+            if all_num != 0:
+                imatch = np.sum(database_labels[idx[:], :] == label, 1) > 0
+                match_num = np.sum(imatch)
+                precX.append(np.float(match_num) / all_num)
+
+                all_sim_num = np.sum(
+                    np.sum(database_labels[:, :] == label, 1) > 0)
+                recX.append(np.float(match_num) / all_sim_num)
+
+                if radius < 10:
+                    ips_trad = np.dot(
+                        query.output[i, :], database.output[ids[i, 0:all_num], :].T)
+                    ids_trad = np.argsort(-ips_trad, axis=0)
+                    db_labels = database_labels[ids[i, 0:all_num], :]
+
+                    rel = match_num
+                    imatch = np.sum(db_labels[ids_trad, :] == label, 1) > 0
+                    Lx = np.cumsum(imatch)
+                    Px = Lx.astype(float) / np.arange(1, all_num + 1, 1)
+                    if rel != 0:
+                        mAPX.append(np.sum(Px * imatch) / rel)
+                else:
+                    mAPX.append(np.float(match_num) / all_num)
+
+            else:
+                precX.append(np.float(0.0))
+                recX.append(np.float(0.0))
+                mAPX.append(np.float(0.0))
+
+        return np.mean(np.array(precX)), np.mean(np.array(recX)), np.mean(np.array(mAPX))
         
 def code_predict(loader, model, name, test_10crop=True, gpu=True):
     start_test = True
@@ -194,11 +247,18 @@ if __name__ == "__main__":
         config["R"] = 54000
     code_and_label = predict(config)
 
-    mAP = mean_average_precision(code_and_label, config["R"])
+#    mAP = mean_average_precision(code_and_label, config["R"])
+    precision,recall,mAp = get_precision_recall_by_Hamming_Radius(code_and_label,radius=2)
     print(config["snapshot_path"])
+    print ("precision: "+ str(precision))
+    print ("recall: "+ str(recall))
     print ("MAP: "+ str(mAP))
     print("saving ...")
     save_code_and_label(code_and_label, osp.join(config["output_path"], args.snapshot))
     print("saving done")
+
+
+
+
 
 
