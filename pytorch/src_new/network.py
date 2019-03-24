@@ -49,8 +49,9 @@ class AlexNetFc(nn.Module):
     y = self.activation1(self.scale*y)
     z = self.weight_layer(x)
     z = self.activation2(z)
-    kvalue = torch.kthvalue(z,3,dim = 1)[0]
-    z[((z.t()<=kvalue).t())] = -float('inf')
+    #kvalue = torch.kthvalue(z,3,dim = 1)[0]
+    #z[((z.t()<=kvalue).t())] = -float('inf')
+    z[(z<self.bandwidth)] = -float('inf')
     z = self.softmax(z)
     return (z,y)
 
