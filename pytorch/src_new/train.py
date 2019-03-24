@@ -208,7 +208,7 @@ def train(config):
            
         inputs = torch.cat((inputs1, inputs2), dim=0)
         res = base_network(inputs)
-        l = []
+        l = list()
         for cnt in range(inputs.size(0)):
             l.append(torch.mm(res[0][cnt].view(1,-1),res[1][cnt].view(-1,hash_bit)))
         outputs = torch.cat(l, dim=0)

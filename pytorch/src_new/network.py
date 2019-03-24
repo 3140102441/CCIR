@@ -34,7 +34,7 @@ class AlexNetFc(nn.Module):
     self.init_scale = 1.0
     self.activation1 = nn.Tanh()
     self.activation2 = nn.ReLU()
-    self.logsoftmax = nn.LogSoftmax()
+    self.softmax = nn.Softmax()
     self.scale = self.init_scale
 
   def forward(self, x):
@@ -49,10 +49,9 @@ class AlexNetFc(nn.Module):
     y = self.activation1(self.scale*y)
     z = self.weight_layer(x)
     z = self.activation2(z)
-    z = self.logsoftmax(z)
-    z[(z < self.bandwidth)] = 0
-    
-
+    kvalue = torch.kthvalue(z,3,dim = 1)[0]
+    z[((z.t()<=kvalue).t())] = -float('inf')
+    z = self.softmax(z)
     return (z,y)
 
   def output_num(self):
