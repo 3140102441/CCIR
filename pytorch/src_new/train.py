@@ -208,9 +208,9 @@ def train(config):
            
         inputs = torch.cat((inputs1, inputs2), dim=0)
         res = base_network(inputs)
-        outputs = Variable(torch.ones(inputs.size(0), hash_bit), requires_grad = True).cuda()
+        outputs = Variable(torch.empty(inputs.size(0), hash_bit)).cuda()
         for i in range(inputs.size(0)):
-            outputs[i] = torch.mm(res[0][i],res[1][i].reshape(8,hash_bit))
+            outputs[i] = torch.mm(res[0][i].view(1,-1),res[1][i].view(8,hash_bit))
         similarity_loss = loss.pairwise_loss(outputs.narrow(0,0,inputs1.size(0)), \
                                  outputs.narrow(0,inputs1.size(0),inputs2.size(0)), \
                                  labels1, labels2, \

@@ -34,6 +34,7 @@ class AlexNetFc(nn.Module):
     self.init_scale = 1.0
     self.activation1 = nn.Tanh()
     self.activation2 = nn.ReLU()
+    self.logsoftmax = nn.LogSoftmax()
     self.scale = self.init_scale
 
   def forward(self, x):
@@ -48,8 +49,10 @@ class AlexNetFc(nn.Module):
     y = self.activation1(self.scale*y)
     z = self.weight_layer(x)
     z = self.activation2(z)
-    z = self.log_softmax(z)
+    z = self.logsoftmax(z)
     z[(z < self.bandwidth)] = 0
+    
+
     return (z,y)
 
   def output_num(self):
@@ -90,6 +93,7 @@ class ResNetFc(nn.Module):
     self.init_scale = 1.0
     self.activation1 = nn.Tanh()
     self.activation2 = nn.ReLU()
+    self.logsoftmax = nn.LogSoftmax()
     self.scale = self.init_scale
 
   def forward(self, x):
@@ -103,7 +107,7 @@ class ResNetFc(nn.Module):
     y = self.activation1(self.scale*y)
     z = self.weight_layer(x)
     z = self.activation2(z)
-    z = self.log_softmax(z)
+    z = self.logsoftmax(z)
     z[(z < self.bandwidth)] = 0
     return (z,y)
 

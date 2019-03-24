@@ -69,9 +69,9 @@ def code_predict(hash_bit,loader, model, name, test_10crop=True, gpu=True):
             outputs = []
             for j in range(10):
                 temp = model(inputs[j])
-                res = Variable(torch.ones(inputs[j].size(0), hash_bit)).cuda()
+                res = Variable(torch.empty(inputs[j].size(0), hash_bit)).cuda()
                 for i in range(inputs[j].size(0)):
-                     res[i] = torch.mm(temp[0][i],torch.sign(temp[1][i].reshape(8,hash_bit)))
+                     res[i] = torch.mm(temp[0][i].view(1,-1),torch.sign(temp[1][i].view(8,hash_bit)))
                 outputs.append(res)
             outputs = sum(outputs) / 10.0
             if start_test:
@@ -92,9 +92,9 @@ def code_predict(hash_bit,loader, model, name, test_10crop=True, gpu=True):
             else:
                 inputs = Variable(inputs)
             temp = model(inputs)
-            outputs = Variable(torch.ones(inputs.size(0), hash_bit)).cuda()
+            outputs = Variable(torch.empty(inputs.size(0), hash_bit)).cuda()
             for i in range(inputs.size(0)):
-                outputs[i] = torch.mm(temp[0][i],torch.sign(temp[1][i].reshape(8,hash_bit)))
+                outputs[i] = torch.mm(temp[0][i].view(1,-1),torch.sign(temp[1][i].view(8,hash_bit)))
             if start_test:
                 all_output = outputs.data.cpu().float()
                 all_label = labels.float()
