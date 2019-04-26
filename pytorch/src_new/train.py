@@ -17,115 +17,6 @@ from torch.autograd import Variable
 
 optim_dict = {"SGD": optim.SGD}
 
-def image_classification_predict(loader, model, test_10crop=True, gpu=True, softmax_param=1.0):
-    start_test = True
-    if test_10crop:
-        iter_test = [iter(loader['test'+str(i)]) for i in range(10)]
-        for i in range(len(loader['test0'])):
-            data = [iter_test[j].next() for j in range(10)]
-            inputs = [data[j][0] for j in range(10)]
-            labels = data[0][1]
-            if gpu:
-                for j in range(10):
-                    inputs[j] = Variable(inputs[j].cuda())
-                labels = Variable(labels.cuda())
-            else:
-                for j in range(10):
-                    inputs[j] = Variable(inputs[j])
-                labels = Variable(labels)
-            outputs = []
-            for j in range(9):
-                _, predict_out = model(inputs[j])
-                outputs.append(nn.Softmax()(softmax_param * predict_out))
-            outputs_center = model(inputs[9])
-            outputs.append(nn.Softmax()(softmax_param * outputs_center))
-            softmax_outputs = sum(outputs)
-            outputs = outputs_center
-            if start_test:
-                all_output = outputs.data.float()
-                all_softmax_output = softmax_outputs.data.cpu().float()
-                all_label = labels.data.float()
-                start_test = False
-            else:
-                all_output = torch.cat((all_output, outputs.data.float()), 0)
-                all_softmax_output = torch.cat((all_softmax_output, softmax_outputs.data.cpu().float()), 0)
-                all_label = torch.cat((all_label, labels.data.float()), 0)
-    else:
-        iter_val = iter(loader["test"])
-        for i in range(len(loader['test'])):
-            data = iter_val.next()
-            inputs = data[0]
-            if gpu:
-                inputs = Variable(inputs.cuda())
-            else:
-                inputs = Variable(inputs)
-            _, outputs = model(inputs)
-            softmax_outputs = nn.Softmax()(softmax_param * outputs)
-            if start_test:
-                all_output = outputs.data.cpu().float()
-                all_softmax_output = softmax_outputs.data.cpu().float()
-                all_label = labels.data.float()
-                start_test = False
-            else:
-                all_output = torch.cat((all_output, outputs.data.cpu().float()), 0)
-                all_softmax_output = torch.cat((all_softmax_output, softmax_outputs.data.cpu().float()), 0)
-                all_label = torch.cat((all_label, labels.data.float()), 0)
-    _, predict = torch.max(all_output, 1)
-    return all_softmax_output, predict, all_output, all_label
-
-def image_classification_test(loader, model, test_10crop=True, gpu=True):
-    start_test = True
-    if test_10crop:
-        iter_test = [iter(loader['test'+str(i)]) for i in range(10)]
-        for i in range(len(loader['test0'])):
-            data = [iter_test[j].next() for j in range(10)]
-            inputs = [data[j][0] for j in range(10)]
-            labels = data[0][1]
-            if gpu:
-                for j in range(10):
-                    inputs[j] = Variable(inputs[j].cuda())
-                labels = Variable(labels.cuda())
-            else:
-                for j in range(10):
-                    inputs[j] = Variable(inputs[j])
-                labels = Variable(labels)
-            outputs = []
-            for j in range(10):
-                _, predict_out = model(inputs[j])
-                outputs.append(nn.Softmax()(predict_out))
-            outputs = sum(outputs)
-            if start_test:
-                all_output = outputs.data.float()
-                all_label = labels.data.float()
-                start_test = False
-            else:
-                all_output = torch.cat((all_output, outputs.data.float()), 0)
-                all_label = torch.cat((all_label, labels.data.float()), 0)
-    else:
-        iter_test = iter(loader["test"])
-        for i in range(len(loader['test'])):
-            data = iter_test.next()
-            inputs = data[0]
-            labels = data[1]
-            if gpu:
-                inputs = Variable(inputs.cuda())
-                labels = Variable(labels.cuda())
-            else:
-                inputs = Variable(inputs)
-                labels = Variable(labels)
-            _, outputs = model(inputs)
-            if start_test:
-                all_output = outputs.data.float()
-                all_label = labels.data.float()
-                start_test = False
-            else:
-                all_output = torch.cat((all_output, outputs.data.float()), 0)
-                all_label = torch.cat((all_label, labels.data.float()), 0)       
-    _, predict = torch.max(all_output, 1)
-    accuracy = torch.sum(torch.squeeze(predict).float() == all_label) / float(all_label.size()[0])
-    return accuracy
-
-
 def train(config):
     ## set pre-process
     prep_dict = {}
@@ -165,7 +56,7 @@ def train(config):
     ## collect parameters
     parameter_list = [{"params":base_network.feature_layers.parameters(), "lr":1}, \
                       {"params":base_network.hash_layer.parameters(), "lr":10},\
-                      {"params":base_network.weight_layer.parameters(), "lr":1}]
+                      {"params":base_network.weight_layer.parameters(), "lr":30}]
  
     ## set optimizer
     optimizer_config = config["optimizer"]
@@ -218,14 +109,16 @@ def train(config):
                                  sigmoid_param=config["loss"]["sigmoid_param"], \
                                  l_threshold=config["loss"]["l_threshold"], \
                                  class_num=config["loss"]["class_num"])
+        total_loss_value = total_loss_value + similarity_loss.float().data[0]
         similarity_loss.backward()
-        #if i % len_train1 == 0:
-        #    print("Epoch: {:05d}, loss: {:.3f}".format(i//len_train1, similarity_loss.float().data[0]))
-        #    config["out_file"].write("Epoch: {:05d}, loss: {:.3f}".format(i//len_train1, \
-        #        similarity_loss.float().data[0]))
-        print("Iter: {:05d}, loss: {:.3f}".format(i, similarity_loss.float().data[0]))
-        config["out_file"].write("Iter: {:05d}, loss: {:.3f}".format(i, \
-            similarity_loss.float().data[0]))
+        if i % len_train1 == 0:
+            print("Epoch: {:05d}, loss: {:.3f}".format(i//len_train1, total_loss_value))
+            total_loss_value = 0.0 
+            config["out_file"].write("Epoch: {:05d}, loss: {:.3f}".format(i//len_train1, \
+                similarity_loss.float().data[0]))
+        #print("Iter: {:05d}, loss: {:.3f}".format(i, similarity_loss.float().data[0]))
+        #config["out_file"].write("Iter: {:05d}, loss: {:.3f}".format(i, \
+        #    similarity_loss.float().data[0]))
         optimizer.step()
 
 if __name__ == "__main__":
@@ -267,7 +160,7 @@ if __name__ == "__main__":
     config["prep"] = {"test_10crop":True, "resize_size":256, "crop_size":224}
     config["optimizer"] = {"type":"SGD", "optim_params":{"lr":1.0, "momentum":0.9, \
                            "weight_decay":0.0005, "nesterov":True}, "lr_type":"step", \
-                           "lr_param":{"init_lr":args.lr, "gamma":0.5, "step":2000} }
+                           "lr_param":{"init_lr":args.lr, "gamma":0.5, "step":3000} }
 
     config["loss"] = {"l_weight":1.0, "q_weight":0, "l_threshold":15.0, "sigmoid_param":10/8./config["hash_bit"], "class_num":args.class_num}
 

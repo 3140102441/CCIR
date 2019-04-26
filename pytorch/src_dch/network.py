@@ -44,9 +44,10 @@ class AlexNetFc(nn.Module):
     x = x.view(x.size(0), 256*6*6)
     x = self.classifier(x)
     y = self.hash_layer(x)
-    if self.iter_num % self.step_size==0:
-        self.scale = self.init_scale * (math.pow((1.+self.gamma*self.iter_num), self.power))
-    y = self.activation1(self.scale*y)
+    #if self.iter_num % self.step_size==0:
+    #    self.scale = self.init_scale * (math.pow((1.+self.gamma*self.iter_num), self.power))
+    #y = self.activation1(self.scale*y)
+    y = self.activation1(y)
     z = self.weight_layer(x)
     z = self.activation2(z)
     #kvalue = torch.min(torch.topk(z,3,dim = 1)[0],dim = 1)[0]

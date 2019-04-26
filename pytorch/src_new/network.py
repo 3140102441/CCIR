@@ -28,7 +28,7 @@ class AlexNetFc(nn.Module):
     
     self.iter_num = 0
     self.__in_features = hash_bit
-    self.step_size = 200
+    self.step_size = 300
     self.gamma = 0.005
     self.power = 0.5
     self.init_scale = 1.0
@@ -49,7 +49,7 @@ class AlexNetFc(nn.Module):
     y = self.activation1(self.scale*y)
     z = self.weight_layer(x)
     z = self.activation2(z)
-    kvalue = torch.min(torch.topk(z,3,dim = 1)[0],dim = 1)[0]
+    kvalue = torch.min(torch.topk(z,4,dim = 1)[0],dim = 1)[0]
     z[((z.t()<kvalue).t())] = -float('inf')
     #z[(z<self.bandwidth)] = -float('inf')
     z = self.softmax(z)

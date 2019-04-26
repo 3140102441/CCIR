@@ -74,6 +74,7 @@ def train(config):
     len_train2 = len(dset_loaders["train_set2"]) - 1
     transfer_loss_value = classifier_loss_value = total_loss_value = 0.0
     best_acc = 0.0
+    totalloss = 0.0
     for i in range(config["num_iterations"]):
         if i % config["snapshot_interval"] == 0:
             torch.save(nn.Sequential(base_network), osp.join(config["output_path"], \
@@ -110,9 +111,11 @@ def train(config):
                                  gamma=config["loss"]["gamma"], \
                                  normed=config["loss"]["normed"], \
                                  q_lambda=config["loss"]["q_lambda"])
+        total_loss_value = total_loss_value + similarity_loss.float().data[0]
         similarity_loss.backward()
         if i % len_train1 == 0:
-            print("Epoch: {:05d}, loss: {:.3f}".format(i//len_train1, similarity_loss.float().data[0]))
+            print("Epoch: {:05d}, loss: {:.3f}".format(i//len_train1, total_loss_value))
+            total_loss_value = 0.0
             config["out_file"].write("Epoch: {:05d}, loss: {:.3f}".format(i//len_train1, \
                 similarity_loss.float().data[0]))
         #print("Iter: {:05d}, loss: {:.3f}".format(i, similarity_loss.float().data[0]))
@@ -159,7 +162,7 @@ if __name__ == "__main__":
     config["prep"] = {"test_10crop":True, "resize_size":256, "crop_size":224}
     config["optimizer"] = {"type":"SGD", "optim_params":{"lr":1.0, "momentum":0.9, \
                            "weight_decay":0.0005, "nesterov":True}, "lr_type":"step", \
-                           "lr_param":{"init_lr":args.lr, "gamma":0.5, "step":2000} }
+                           "lr_param":{"init_lr":args.lr, "gamma":0.5, "step":3000} }
 
     config["loss"] = {"gamma":15.0, "normed":True, "q_lambda":args.q_lambda}
 
