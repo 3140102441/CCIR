@@ -225,7 +225,7 @@ if __name__ == "__main__":
     # train config  
     config = {}
     config["dataset"] = args.dataset 
-    config["snapshot_path"] = "../snapshot/"+config["dataset"]+"_"+str(args.hash_bit)+"bit_"+args.prefix+"/"+args.snapshot+"_model.pth.tar"
+    config["snapshot_path"] = "../snapshot/"+config["dataset"]+"_"+str(args.hash_bit)+"bit_"+args.prefix+"/"+args.snapshot+"_hashnet_model.pth.tar"
     config["output_path"] = "../snapshot/"+config["dataset"]+"_"+str(args.hash_bit)+"bit_"+args.prefix
 
     config["prep"] = {"test_10crop":False, "resize_size":256, "crop_size":224}

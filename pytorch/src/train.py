@@ -76,7 +76,7 @@ def train(config):
     for i in range(config["num_iterations"]):
         if i % config["snapshot_interval"] == 0:
             torch.save(nn.Sequential(base_network), osp.join(config["output_path"], \
-                "iter_{:05d}_model.pth.tar".format(i)))
+                "iter_{:05d}_hashnet_model.pth.tar".format(i)))
 
         ## train one iter
         base_network.train(True)
