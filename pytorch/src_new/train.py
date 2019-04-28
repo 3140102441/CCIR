@@ -111,7 +111,7 @@ def train(config):
                                  class_num=config["loss"]["class_num"])
         total_loss_value = total_loss_value + similarity_loss.float().data[0]
         similarity_loss.backward()
-        if i % len_train1 == 0:
+        if (i+1) % len_train1 == 0:
             print("Epoch: {:05d}, loss: {:.3f}".format(i//len_train1, total_loss_value))
             total_loss_value = 0.0 
             config["out_file"].write("Epoch: {:05d}, loss: {:.3f}".format(i//len_train1, \

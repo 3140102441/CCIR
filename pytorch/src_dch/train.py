@@ -113,7 +113,7 @@ def train(config):
                                  q_lambda=config["loss"]["q_lambda"])
         total_loss_value = total_loss_value + similarity_loss.float().data[0]
         similarity_loss.backward()
-        if i % len_train1 == 0:
+        if (i+1) % len_train1 == 0:
             print("Epoch: {:05d}, loss: {:.3f}".format(i//len_train1, total_loss_value))
             total_loss_value = 0.0
             config["out_file"].write("Epoch: {:05d}, loss: {:.3f}".format(i//len_train1, \
