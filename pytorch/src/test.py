@@ -247,11 +247,11 @@ if __name__ == "__main__":
         config["R"] = 54000
     code_and_label = predict(config)
 
-#    mAP = mean_average_precision(code_and_label, config["R"])
-    precision,recall,mAp = get_precision_recall_by_Hamming_Radius(code_and_label,radius=2)
+    mAP = mean_average_precision(code_and_label, config["R"])
+    #precision,recall,mAp = get_precision_recall_by_Hamming_Radius(code_and_label,radius=2)
     print(config["snapshot_path"])
-    print ("precision: "+ str(precision))
-    print ("recall: "+ str(recall))
+    #print ("precision: "+ str(precision))
+    #print ("recall: "+ str(recall))
     print ("MAP: "+ str(mAP))
     print("saving ...")
     save_code_and_label(code_and_label, osp.join(config["output_path"], args.snapshot))
